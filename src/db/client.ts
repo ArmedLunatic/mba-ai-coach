@@ -2,11 +2,21 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error('DATABASE_URL is not set');
+function createDb() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  // Supabase transaction pooler does not support prepared statements.
+  return drizzle(postgres(url, { prepare: false }), { schema });
+}
 
-// Supabase transaction pooler does not support prepared statements.
-const client = postgres(url, { prepare: false });
+export type Db = ReturnType<typeof createDb>;
 
-export const db = drizzle(client, { schema });
-export type Db = typeof db;
+let instance: Db | null = null;
+
+/** Lazily-created Drizzle client, so importing this module never needs env vars (e.g. during `next build`). */
+export const db: Db = new Proxy({} as Db, {
+  get(_target, prop, receiver) {
+    instance ??= createDb();
+    return Reflect.get(instance, prop, receiver);
+  },
+});
