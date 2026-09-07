@@ -26,3 +26,23 @@ This is slice 1: the daily loop. Onboard → dashboard with today's tasks → a 
 - `src/app/*` — Next.js App Router pages, one route handler (`/api/session/[id]/step`).
 
 Design spec: `docs/superpowers/specs/2026-09-07-daily-loop-design.md`.
+
+## Running with a Claude subscription instead of an API key
+
+Set `COACH_PROVIDER=claude-code` (see `.env.example`) to route every model call in `src/ai/router.ts`
+through the local Claude Code CLI (`claude -p`) instead of the Anthropic API. Calls then run under
+whatever account the `claude` CLI is logged into on this machine — a Claude subscription (Pro/Max),
+not `ANTHROPIC_API_KEY`.
+
+This only works on a machine where the `claude` CLI is installed and already logged in (`claude`
+opens the login flow interactively; headless `-p` mode does not). It is meant for local development,
+not for deployed environments — a server has no browser to complete the OAuth login, and each call
+shells out to a CLI process rather than making an HTTP request.
+
+Smoke-test that the CLI is logged in and working:
+
+```bash
+claude -p 'Reply with the word ok' --output-format json --model haiku
+```
+
+If that prints a JSON envelope with `"result": "ok"` (or similar), `COACH_PROVIDER=claude-code` will work.
