@@ -29,9 +29,12 @@ export function parseOnboarding(form: FormData): { ok: true; value: OnboardingIn
   const str = (k: string) => (form.get(k) ?? '').toString();
   const deadlines = [];
   for (let i = 0; i < MAX_DEADLINES; i++) {
-    const title = str(`deadline.title.${i}`);
-    const date = str(`deadline.date.${i}`);
-    if (!title.trim() || !date) continue;
+    const title = str(`deadline.title.${i}`).trim();
+    const date = str(`deadline.date.${i}`).trim();
+    // A row the student left completely blank is not a deadline; a half-filled one is a mistake.
+    if (!title && !date) continue;
+    if (!date) return { ok: false, error: `Deadline ${i + 1} needs a date` };
+    if (!title) return { ok: false, error: `Deadline ${i + 1} needs a title` };
     const course = str(`deadline.course.${i}`);
     deadlines.push({ title, courseSlug: course || null, kind: str(`deadline.kind.${i}`) || 'exam', dueAt: `${date}T00:00:00.000Z` });
   }

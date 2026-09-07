@@ -50,6 +50,16 @@ describe('parseOnboarding', () => {
     expect(parseOnboarding(form({ ...base, courses: ['finance', 'astrology'] })).ok).toBe(false);
   });
 
+  it('rejects a deadline row with a title but no date', () => {
+    const r = parseOnboarding(form({ ...base, 'deadline.date.0': '' }));
+    expect(r).toEqual({ ok: false, error: 'Deadline 1 needs a date' });
+  });
+
+  it('rejects a deadline row with a date but no title', () => {
+    const r = parseOnboarding(form({ ...base, 'deadline.title.1': '', 'deadline.date.1': '2026-10-01' }));
+    expect(r).toEqual({ ok: false, error: 'Deadline 2 needs a title' });
+  });
+
   it('reports friendly messages for deadline problems', () => {
     const long = parseOnboarding(form({ ...base, 'deadline.title.0': 'x'.repeat(81) }));
     expect(long).toEqual({ ok: false, error: 'Deadline titles are limited to 80 characters' });
