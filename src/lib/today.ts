@@ -15,3 +15,10 @@ export function startOfDay(iso: string): Date {
 export function daysBetween(fromISO: string, to: Date): number {
   return Math.floor((to.getTime() - startOfDay(fromISO).getTime()) / DAY_MS);
 }
+
+/** Current time, or noon UTC on COACH_TODAY when that override is set. */
+export function now(): Date {
+  const override = process.env.COACH_TODAY;
+  if (override && /^\d{4}-\d{2}-\d{2}$/.test(override)) return new Date(`${override}T12:00:00.000Z`);
+  return new Date();
+}

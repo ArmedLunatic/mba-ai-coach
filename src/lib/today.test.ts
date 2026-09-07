@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { daysBetween, startOfDay, todayISO } from './today';
+import { daysBetween, now, startOfDay, todayISO } from './today';
 
 describe('todayISO', () => {
   afterEach(() => {
@@ -28,5 +28,18 @@ describe('daysBetween', () => {
 describe('startOfDay', () => {
   it('returns midnight UTC for the ISO date', () => {
     expect(startOfDay('2026-09-07').toISOString()).toBe('2026-09-07T00:00:00.000Z');
+  });
+});
+
+describe('now', () => {
+  afterEach(() => {
+    delete process.env.COACH_TODAY;
+  });
+  it('is noon UTC on COACH_TODAY when set', () => {
+    process.env.COACH_TODAY = '2026-09-10';
+    expect(now().toISOString()).toBe('2026-09-10T12:00:00.000Z');
+  });
+  it('is the current time otherwise', () => {
+    expect(Math.abs(now().getTime() - Date.now())).toBeLessThan(1000);
   });
 });
