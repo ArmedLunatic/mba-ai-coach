@@ -128,3 +128,9 @@
     @apply font-sans;
   }
 }
+/* Calm academic palette: slightly warm neutral ground, ink-blue primary. */
+:root {
+  --background: oklch(0.985 0.003 80);
+  --primary: oklch(0.38 0.09 260);
+  --primary-foreground: oklch(0.98 0 0);
+}
