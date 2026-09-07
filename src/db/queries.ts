@@ -119,6 +119,7 @@ export async function getCourses(studentId: string): Promise<Course[]> {
   return db.select().from(courses).where(eq(courses.studentId, studentId)).orderBy(asc(courses.name));
 }
 
+/** All deadlines for the student, soonest first. Callers filter to upcoming ones with `daysBetween`. */
 export async function getDeadlines(studentId: string): Promise<Deadline[]> {
   return db.select().from(deadlines).where(eq(deadlines.studentId, studentId)).orderBy(asc(deadlines.dueAt));
 }
@@ -251,7 +252,11 @@ export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void>
 
     for (let i = 0; i < w.englishNotes.length; i++) {
       const note = w.englishNotes[i];
-      const englishSkill = await getEnglishSkillByName(w.studentId, note.skill);
+      const [englishSkill] = await tx
+        .select()
+        .from(skills)
+        .where(and(eq(skills.studentId, w.studentId), eq(skills.domain, 'english'), eq(skills.name, note.skill)))
+        .limit(1);
       if (!englishSkill) continue;
       await tx.insert(skillObservations).values({ skillId: englishSkill.id, sessionId: w.sessionId, kind: 'english_note', note: note.note });
       const penalty = w.englishPenalties[i] ?? 0;
