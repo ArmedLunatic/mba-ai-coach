@@ -231,7 +231,7 @@ export type SessionOutcomeWrite = {
 export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void> {
   const since = new Date(w.at.getTime() - WEEK_MS);
   await db.transaction(async (tx) => {
-    await tx
+    const [finalized] = await tx
       .update(sessions)
       .set({
         phaseState: w.state,
@@ -241,7 +241,10 @@ export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void>
         selfConfidence: w.selfConfidence,
         summary: w.summary,
       })
-      .where(and(eq(sessions.id, w.sessionId), isNull(sessions.endedAt)));
+      .where(and(eq(sessions.id, w.sessionId), isNull(sessions.endedAt)))
+      .returning({ id: sessions.id });
+    // Already finalized by a concurrent request: skip skill/observation writes so nothing is applied twice.
+    if (!finalized) return;
 
     if (w.messages.length) {
       await tx.insert(sessionMessages).values(w.messages.map((m) => ({ sessionId: w.sessionId, ...m })));
