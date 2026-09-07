@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { Domain } from './curriculum';
+import type { SessionState } from '@/domain/session';
 
 export type PlanItem = {
   skillId: string;
@@ -82,7 +83,7 @@ export const sessions = pgTable('sessions', {
   performance: integer('performance'), // 0-100, set on finalize
   selfConfidence: integer('self_confidence'), // 1-5
   summary: text('summary'),
-  phaseState: jsonb('phase_state').notNull(), // SessionState from @/domain/session
+  phaseState: jsonb('phase_state').$type<SessionState>().notNull(),
 });
 
 export const sessionMessages = pgTable('session_messages', {
