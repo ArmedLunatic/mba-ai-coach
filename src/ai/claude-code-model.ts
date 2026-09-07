@@ -29,6 +29,8 @@ export type ExecFn = (args: string[], stdin: string) => Promise<{ stdout: string
 interface ClaudeCodeEnvelope {
   is_error?: boolean;
   result?: string;
+  /** Present in newer CLI versions when `--json-schema` is used; preferred over parsing `result`. */
+  structured_output?: unknown;
   stop_reason?: string;
   usage?: { input_tokens?: number; output_tokens?: number };
 }
@@ -114,6 +116,9 @@ function stripFences(text: string): string {
 function extractText(envelope: ClaudeCodeEnvelope, structured: boolean): string {
   const stripped = stripFences(envelope.result ?? '');
   if (!structured) return stripped;
+  if (envelope.structured_output !== undefined && envelope.structured_output !== null) {
+    return JSON.stringify(envelope.structured_output);
+  }
   try {
     return JSON.stringify(JSON.parse(stripped));
   } catch {

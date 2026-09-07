@@ -92,6 +92,22 @@ describe('createClaudeCodeModel', () => {
     expect(text).toEqual({ type: 'text', text: JSON.stringify({ score: 88, mistakes: ['forgot tax shield'] }) });
   });
 
+  it('prefers a structured_output field over the result text when the CLI provides one', async () => {
+    const exec: ExecFn = async () => ({
+      stdout: envelope({ result: 'Here is the grade.', structured_output: { score: 64, mistakes: [] } }),
+      stderr: '',
+      exitCode: 0,
+    });
+
+    const model = createClaudeCodeModel('haiku', { exec });
+    const result = await model.doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'Grade this.' }] }],
+      responseFormat: { type: 'json', schema: { type: 'object' } },
+    } as Parameters<typeof model.doGenerate>[0]);
+
+    expect(result.content[0]).toEqual({ type: 'text', text: JSON.stringify({ score: 64, mistakes: [] }) });
+  });
+
   it('rejects with the envelope result text when is_error is true', async () => {
     const exec: ExecFn = async () => ({
       stdout: envelope({ is_error: true, result: 'overloaded_error: try again later' }),
