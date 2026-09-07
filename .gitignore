@@ -43,3 +43,6 @@ next-env.d.ts
 
 # superpowers scratch
 .superpowers/
+
+# embedded PGlite database (used when DATABASE_URL is unset)
+data/

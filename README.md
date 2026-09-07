@@ -7,7 +7,7 @@ This is slice 1: the daily loop. Onboard → dashboard with today's tasks → a 
 ## Setup
 
 1. `npm install`
-2. Copy `.env.example` to `.env.local` and fill in `DATABASE_URL` (Supabase transaction pooler) and `ANTHROPIC_API_KEY`.
+2. Copy `.env.example` to `.env.local` and fill in `DATABASE_URL` (Supabase transaction pooler) and `ANTHROPIC_API_KEY`; leaving `DATABASE_URL` unset uses an embedded PGlite database on disk at `./data/coach.pglite` instead, with no external services required.
 3. `npm run db:push` to create the tables.
 4. `npm run dev` and open http://localhost:3000. You will be sent to onboarding.
 
