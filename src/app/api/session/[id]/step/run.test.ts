@@ -43,7 +43,6 @@ function loadedSession(state: SessionState): LoadedSession {
       preferredStudyTimes: [],
       createdAt: AT,
     },
-    messages: [],
   };
 }
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SessionRunner } from '@/components/session/session-runner';
-import { loadSession } from '@/db/queries';
+import { getSessionMessages, loadSession } from '@/db/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const loaded = await loadSession(id);
   if (!loaded) notFound();
+  const messages = await getSessionMessages(id);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
@@ -26,7 +27,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         topic={loaded.skill.name}
         courseName={loaded.course?.name ?? null}
         initialState={loaded.session.phaseState}
-        initialMessages={loaded.messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
+        initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
       />
     </main>
   );

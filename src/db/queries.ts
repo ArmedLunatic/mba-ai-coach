@@ -153,7 +153,7 @@ export async function createSession(skillId: string): Promise<Session> {
   return row;
 }
 
-export type LoadedSession = { session: Session; skill: Skill; course: Course | null; student: Student; messages: SessionMessage[] };
+export type LoadedSession = { session: Session; skill: Skill; course: Course | null; student: Student };
 
 export async function loadSession(id: string): Promise<LoadedSession | null> {
   const rows = await db
@@ -166,8 +166,7 @@ export async function loadSession(id: string): Promise<LoadedSession | null> {
     .limit(1);
   const row = rows[0];
   if (!row) return null;
-  const messages = await getSessionMessages(id);
-  return { session: row.session, skill: row.skill, course: row.course ?? null, student: row.student, messages };
+  return { session: row.session, skill: row.skill, course: row.course ?? null, student: row.student };
 }
 
 export type NewMessage = { phase: SessionPhase; role: 'coach' | 'student'; content: string };
