@@ -34,7 +34,8 @@ export async function generateGreeting(input: GreetingInput): Promise<string> {
     const dl = nextDeadline(input);
     const { text } = await generateText({
       model: modelFor('greeting'),
-      system: 'You write a two-sentence morning note for an MBA student from their personal coach. Calm, specific, second person. No emoji, no exclamation marks, no bullet points.',
+      system:
+        'You write a two-sentence morning note for an MBA student from their personal coach. Calm, specific, second person. No emoji, no exclamation marks, no bullet points. Plain sentences. No dashes as punctuation, no metaphors, at most 45 words.',
       prompt: [
         `Student: ${input.name}.`,
         dl ? `Next deadline: ${dl}.` : 'No upcoming deadlines.',

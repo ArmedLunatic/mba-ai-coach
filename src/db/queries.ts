@@ -175,13 +175,18 @@ export async function saveSessionStep(id: string, state: SessionState, messages:
   await db.transaction(async (tx) => {
     await tx.update(sessions).set({ phaseState: state, phase: state.phase }).where(eq(sessions.id, id));
     if (messages.length) {
+      // `messages` is already in the intended reading order; the `seq` serial column preserves
+      // that order for getSessionMessages even though every row in this transaction shares one
+      // `created_at`.
       await tx.insert(sessionMessages).values(messages.map((m) => ({ sessionId: id, ...m })));
     }
   });
 }
 
 export async function getSessionMessages(id: string): Promise<SessionMessage[]> {
-  return db.select().from(sessionMessages).where(eq(sessionMessages.sessionId, id)).orderBy(asc(sessionMessages.createdAt), asc(sessionMessages.id));
+  // Order by `seq` alone: rows inserted in the same transaction share one `created_at` (Postgres
+  // `now()` is fixed per transaction), so createdAt/id ordering can scramble a step's messages.
+  return db.select().from(sessionMessages).where(eq(sessionMessages.sessionId, id)).orderBy(asc(sessionMessages.seq));
 }
 
 export async function getSkillObservations(skillId: string, limit: number): Promise<SkillObservation[]> {
@@ -247,6 +252,9 @@ export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void>
     if (!finalized) return;
 
     if (w.messages.length) {
+      // `w.messages` is already in the intended reading order; the `seq` serial column preserves
+      // that order for getSessionMessages even though every row in this transaction shares one
+      // `created_at`.
       await tx.insert(sessionMessages).values(w.messages.map((m) => ({ sessionId: w.sessionId, ...m })));
     }
 

@@ -48,6 +48,19 @@ describe('buildDailyPlan', () => {
     expect(plan).toHaveLength(3);
     expect(plan.map((p) => p.skillId)).toEqual(['a', 'b', 'tenses']);
     expect(plan[2].minutes).toBe(10);
+    expect(plan[2].reason).toBe('Daily English practice');
+  });
+
+  it('uses the communication-specific reason for a communication-domain language item', () => {
+    const skills = [
+      skill({ id: 'a', score: 30 }),
+      skill({ id: 'b', score: 35 }),
+      skill({ id: 'c', score: 40 }),
+      skill({ id: 'pitch', domain: 'communication', courseId: null, courseName: null, score: 45 }),
+    ];
+    const plan = buildDailyPlan({ skills, deadlines: [], todayISO: TODAY });
+    const languageItem = plan.find((p) => p.skillId === 'pitch');
+    expect(languageItem?.reason).toBe('Daily communication practice');
   });
 
   it('prefers stale skills and explains it', () => {

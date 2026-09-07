@@ -63,7 +63,7 @@ function scoreSkill(skill: PlannerSkill, deadlines: PlannerDeadline[], todayISO:
   } else if (skill.lastPracticedAt && staleDays >= 7) {
     reason = `Not practiced in ${daysSince} days`;
   } else if (isLanguageDomain(skill.domain)) {
-    reason = 'Daily English practice';
+    reason = skill.domain === 'communication' ? 'Daily communication practice' : 'Daily English practice';
   } else if (skill.courseName && isWeakestInCourse) {
     reason = `Your weakest ${skill.courseName} topic`;
   } else if (skill.courseName) {

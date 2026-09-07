@@ -174,6 +174,25 @@ describe('runSessionStep', () => {
     expect(h.deps.runEffect).not.toHaveBeenCalled();
   });
 
+  it('orders a practice.answer step as student answer, then grade feedback, then next question', async () => {
+    const state: SessionState = {
+      ...initialState(),
+      phase: 'practice',
+      practice: { questions: ['Why is WACC used to discount cash flows?'], answers: [], correct: 0 },
+    };
+    const h = harness();
+    const result = await runSessionStep(loadedSession(state), { type: 'practice.answer', answer: 'Because it reflects the blended cost of financing.' }, h.deps);
+
+    expect(result.status).toBe(200);
+    // seq (not created_at) preserves this order in the real DB: student answer, then the coach's
+    // grade feedback for it, then the next practice question — never the reply before the answer.
+    expect(h.saved[0].messages).toEqual([
+      { phase: 'practice', role: 'student', content: 'Because it reflects the blended cost of financing.' },
+      { phase: 'practice', role: 'coach', content: 'Correct, and note the tax shield.' },
+      { phase: 'practice', role: 'coach', content: 'Why does WACC fall when debt rises?' },
+    ]);
+  });
+
   it('appends the next test question after the student message on a non-final test answer', async () => {
     const state: SessionState = {
       ...initialState(),

@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, serial, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import type { Domain } from './curriculum';
 import type { SessionState } from '@/domain/session';
 
@@ -98,6 +98,10 @@ export const sessionMessages = pgTable('session_messages', {
   role: text('role').$type<'coach' | 'student'>().notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Rows written in one transaction share the same `created_at` (Postgres `now()` is fixed per
+  // transaction), so ordering by createdAt alone is unstable within a step. `seq` is a monotonic
+  // insertion-order tiebreaker that callers must populate in the intended message order.
+  seq: serial('seq').notNull(),
 });
 
 export const skillsRelations = relations(skills, ({ one }) => ({
