@@ -26,11 +26,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const body = await req.json().catch(() => null);
   const parsed = sessionEventSchema.safeParse(body?.event);
-  if (!parsed.success) return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: 'That request could not be understood. Reload the page and try again.' }, { status: 400 });
   const event = parsed.data;
 
   const loaded = await loadSession(id);
-  if (!loaded) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+  if (!loaded) return NextResponse.json({ error: 'This session could not be found. Return to the dashboard to start a new one.' }, { status: 404 });
   const { session, skill, course, student } = loaded;
 
   const before = session.phaseState;
@@ -38,7 +38,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     transition = next(before, event);
   } catch (e) {
-    if (e instanceof InvalidTransition) return NextResponse.json({ error: e.message }, { status: 409 });
+    if (e instanceof InvalidTransition) {
+      console.warn('session step rejected', { id, event: event.type, reason: e.message });
+      return NextResponse.json({ error: 'That step is no longer available. Reload the page to continue.' }, { status: 409 });
+    }
     throw e;
   }
 
