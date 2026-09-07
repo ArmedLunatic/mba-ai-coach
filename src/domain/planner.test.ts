@@ -29,6 +29,13 @@ describe('buildDailyPlan', () => {
     expect(plan[0].reason).toBe('Finance exam in 2 days');
   });
 
+  it('lets a deadline within 14 days win the reason even when staleness scores higher', () => {
+    const skills = [skill({ id: 'wacc', name: 'WACC', score: 60, lastPracticedAt: d('2026-08-28') })];
+    const deadlines: PlannerDeadline[] = [{ courseId: 'fin', title: 'Finance exam', kind: 'exam', dueAt: d('2026-09-17') }];
+    const plan = buildDailyPlan({ skills, deadlines, todayISO: TODAY });
+    expect(plan[0].reason).toBe('Finance exam in 10 days');
+  });
+
   it('always includes exactly one language item when available, placed last', () => {
     const skills = [
       skill({ id: 'a', score: 30 }),

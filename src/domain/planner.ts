@@ -33,6 +33,12 @@ export function minutesFor(skill: PlannerSkill): number {
   return 20;
 }
 
+/**
+ * priority = (100 − score)
+ *          + 3 · max(0, 14 − daysToNearestCourseDeadline)
+ *          + 1.5 · min(14, daysSincePracticed; 14 if never)
+ *          − 50 · practicedToday
+ */
 function scoreSkill(skill: PlannerSkill, deadlines: PlannerDeadline[], todayISO: string, isWeakestInCourse: boolean): Scored {
   const today = startOfDay(todayISO);
   const weakness = 100 - skill.score;
@@ -50,9 +56,9 @@ function scoreSkill(skill: PlannerSkill, deadlines: PlannerDeadline[], todayISO:
   const practicedToday = skill.lastPracticedAt !== null && daysSince === 0;
   const priority = weakness + deadlineScore + staleScore - (practicedToday ? PRACTICED_TODAY_PENALTY : 0);
 
-  // The reason names the dominant factor: an imminent deadline, then staleness, then weakness.
+  // Reason precedence: deadline within 14 days → stale (≥ 7 days) → English → weakest in course → mastery.
   let reason: string;
-  if (nearest && deadlineScore > 0 && deadlineScore >= staleScore) {
+  if (nearest && nearest.days <= 14) {
     reason = `${nearest.dl.title} in ${nearest.days} day${nearest.days === 1 ? '' : 's'}`;
   } else if (skill.lastPracticedAt && staleDays >= 7) {
     reason = `Not practiced in ${daysSince} days`;
