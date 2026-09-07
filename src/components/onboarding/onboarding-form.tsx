@@ -99,7 +99,7 @@ export function OnboardingForm() {
       <Section title="Upcoming deadlines (optional)">
         {Array.from({ length: MAX_DEADLINES }, (_, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_1fr]">
-            <Input name={`deadline.title.${i}`} placeholder="Finance midterm" aria-label={`Deadline ${i + 1} title`} />
+            <Input name={`deadline.title.${i}`} placeholder="Finance midterm" aria-label={`Deadline ${i + 1} title`} maxLength={80} />
             <select name={`deadline.course.${i}`} className="h-9 rounded-md border border-input bg-transparent px-2 text-sm" aria-label={`Deadline ${i + 1} course`}>
               <option value="">No course</option>
               {COURSES.map((c) => (

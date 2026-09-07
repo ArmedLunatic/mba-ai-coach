@@ -49,4 +49,11 @@ describe('parseOnboarding', () => {
   it('rejects unknown course slugs', () => {
     expect(parseOnboarding(form({ ...base, courses: ['finance', 'astrology'] })).ok).toBe(false);
   });
+
+  it('reports friendly messages for deadline problems', () => {
+    const long = parseOnboarding(form({ ...base, 'deadline.title.0': 'x'.repeat(81) }));
+    expect(long).toEqual({ ok: false, error: 'Deadline titles are limited to 80 characters' });
+    const badCourse = parseOnboarding(form({ ...base, 'deadline.course.0': 'astrology' }));
+    expect(badCourse).toEqual({ ok: false, error: 'Choose a course from your list' });
+  });
 });

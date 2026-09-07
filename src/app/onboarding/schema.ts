@@ -7,17 +7,17 @@ export const MAX_DEADLINES = 3;
 export const STUDY_TIMES = ['morning', 'afternoon', 'evening', 'night'] as const;
 
 const deadlineSchema = z.object({
-  title: z.string().trim().min(1).max(80),
-  courseSlug: z.enum(SLUGS).nullable(),
-  kind: z.enum(['exam', 'assignment', 'class', 'presentation']),
-  dueAt: z.coerce.date(),
+  title: z.string().trim().min(1, 'Give each deadline a title').max(80, 'Deadline titles are limited to 80 characters'),
+  courseSlug: z.enum(SLUGS, { error: 'Choose a course from your list' }).nullable(),
+  kind: z.enum(['exam', 'assignment', 'class', 'presentation'], { error: 'Choose a deadline type' }),
+  dueAt: z.coerce.date({ error: 'Enter a valid date' }),
 });
 
 const onboardingSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(60),
   program: z.string().trim().min(1, 'Program is required').max(80),
   semester: z.string().trim().min(1, 'Semester is required').max(40),
-  courseSlugs: z.array(z.enum(SLUGS)).min(1, 'Pick at least one course'),
+  courseSlugs: z.array(z.enum(SLUGS, { error: 'Choose courses from the list' })).min(1, 'Pick at least one course'),
   englishComfort: z.coerce.number().int().min(1).max(5),
   academicGoals: z.string().trim().max(300),
   careerGoals: z.string().trim().max(300),

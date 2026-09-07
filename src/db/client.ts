@@ -13,7 +13,11 @@ export type Db = ReturnType<typeof createDb>;
 
 let instance: Db | null = null;
 
-/** Lazily-created Drizzle client, so importing this module never needs env vars (e.g. during `next build`). */
+/**
+ * Lazily-created Drizzle client, so importing this module never needs env vars (e.g. during `next build`).
+ * Forwarding `this` through the Proxy is safe because drizzle's PgDatabase keeps `session`/`dialect` as plain
+ * instance properties and its query builders are real, unproxied objects.
+ */
 export const db: Db = new Proxy({} as Db, {
   get(_target, prop, receiver) {
     instance ??= createDb();
