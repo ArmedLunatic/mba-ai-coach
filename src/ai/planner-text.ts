@@ -44,7 +44,8 @@ export async function generateGreeting(input: GreetingInput): Promise<string> {
     });
     const out = text.trim();
     return out.length > 0 ? out : fallbackGreeting(input);
-  } catch {
+  } catch (e) {
+    console.error('greeting generation failed', e);
     return fallbackGreeting(input);
   }
 }
@@ -75,7 +76,8 @@ export async function generateTrendSentences(input: TrendInput): Promise<string[
       output: Output.object({ schema: trendSchema }),
     });
     return output.sentences;
-  } catch {
+  } catch (e) {
+    console.error('trend generation failed', e);
     return fallbackTrend(input);
   }
 }
