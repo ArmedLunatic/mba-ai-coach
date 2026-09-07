@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MBA AI Coach
 
-## Getting Started
+A personal MBA coach that knows what you are studying, where you struggle, and what to do next.
+This is slice 1: the daily loop. Onboard → dashboard with today's tasks → a five-phase focus session
+(Learn, Practice, Explain, Test, Feedback) → skill graph update → tomorrow's plan changes.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. `npm install`
+2. Copy `.env.example` to `.env.local` and fill in `DATABASE_URL` (Supabase transaction pooler) and `ANTHROPIC_API_KEY`.
+3. `npm run db:push` to create the tables.
+4. `npm run dev` and open http://localhost:3000. You will be sent to onboarding.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm test` — unit tests for the planner, skill math, session state machine, and AI parsing (models are mocked)
+- `npm run typecheck`
+- `npm run db:reset` — wipe the single student and start over
+- `COACH_TODAY=2026-09-08 npm run dev` — time-travel the planner to see how tomorrow's plan changes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How it works
 
-## Learn More
+- `src/domain/*` — pure logic: `planner.ts` ranks skills by weakness, deadline proximity, and staleness; `session.ts` is the phase state machine; `skills.ts` updates scores and trends.
+- `src/ai/*` — one typed Claude call per session phase. `router.ts` maps task kinds to models (Haiku for cheap tasks, Sonnet for coaching).
+- `src/db/*` — Drizzle schema and queries on Supabase Postgres.
+- `src/app/*` — Next.js App Router pages, one route handler (`/api/session/[id]/step`).
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Design spec: `docs/superpowers/specs/2026-09-07-daily-loop-design.md`.
