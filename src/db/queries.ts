@@ -131,13 +131,18 @@ export async function getDailyPlan(studentId: string, date: string): Promise<Dai
     .select()
     .from(dailyPlans)
     .where(and(eq(dailyPlans.studentId, studentId), eq(dailyPlans.date, date)))
+    .orderBy(desc(dailyPlans.createdAt))
     .limit(1);
   return rows[0] ?? null;
 }
 
+/** Insert-or-read: the `(student_id, date)` unique constraint makes a concurrent second write a no-op. */
 export async function saveDailyPlan(studentId: string, date: string, greeting: string, items: PlanItem[]): Promise<DailyPlan> {
-  const [row] = await db.insert(dailyPlans).values({ studentId, date, greeting, items }).returning();
-  return row;
+  const [row] = await db.insert(dailyPlans).values({ studentId, date, greeting, items }).onConflictDoNothing().returning();
+  if (row) return row;
+  const existing = await getDailyPlan(studentId, date);
+  if (!existing) throw new Error(`Could not save or read the daily plan for ${date}`);
+  return existing;
 }
 
 export async function createSession(skillId: string): Promise<Session> {

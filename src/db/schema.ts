@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import type { Domain } from './curriculum';
 import type { SessionState } from '@/domain/session';
 
@@ -63,14 +63,19 @@ export const deadlines = pgTable('deadlines', {
   dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
 });
 
-export const dailyPlans = pgTable('daily_plans', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
-  date: text('date').notNull(), // YYYY-MM-DD
-  greeting: text('greeting').notNull(),
-  items: jsonb('items').$type<PlanItem[]>().notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const dailyPlans = pgTable(
+  'daily_plans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    date: text('date').notNull(), // YYYY-MM-DD
+    greeting: text('greeting').notNull(),
+    items: jsonb('items').$type<PlanItem[]>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  // One plan per student per day: two concurrent dashboard loads must not both insert.
+  (t) => [unique('daily_plans_student_date').on(t.studentId, t.date)],
+);
 
 export type SessionPhase = 'learn' | 'practice' | 'explain' | 'test' | 'feedback' | 'done';
 
