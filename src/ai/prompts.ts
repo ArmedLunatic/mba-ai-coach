@@ -80,5 +80,16 @@ export function gradeTestPrompt(state: SessionState): string {
 export function feedbackPrompt(state: SessionState): string {
   const score = state.test.score ?? 0;
   const mistakes = state.test.mistakes.join('; ') || 'none';
-  return `The student scored ${score}/100 on the test. Mistakes: ${mistakes}. Practice: ${state.practice.correct}/${state.practice.questions.length} correct. Concept gaps: ${state.explain.conceptGaps.join('; ') || 'none'}.\nWrite a summary in under 80 words, second person: what went well, then the single most important thing to work on next.`;
+  const testPairs = state.test.questions
+    .map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${state.test.answers[i] ?? '(no answer)'}`)
+    .join('\n');
+  return [
+    `The student scored ${score}/100 on the test. Graded mistakes: ${mistakes}.`,
+    `Practice: ${state.practice.correct}/${state.practice.questions.length} correct.`,
+    `Gaps noticed earlier in the student's own explanation: ${state.explain.conceptGaps.join('; ') || 'none'}. The test answers below may already cover some of these; treat a gap as resolved if the student handled it correctly in the test, and do not ask for it again.`,
+    testPairs ? `Test answers:\n${testPairs}` : '',
+    'Write a summary in under 80 words, second person: what went well, then the single most important thing to work on next, based on the graded mistakes first. Do not ask the student to do anything now; the session is over.',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

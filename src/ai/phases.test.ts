@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { initialState, type SessionState } from '@/domain/session';
 import type { CoachContext } from './context';
 import { runEffect } from './phases';
-import { explainTopicPrompt } from './prompts';
+import { explainTopicPrompt, feedbackPrompt } from './prompts';
 import { setModelResolver, type TaskKind } from './router';
 import { mockModel, mockResolver } from './test-utils';
 
@@ -68,5 +68,27 @@ describe('language-domain prompts', () => {
     expect(prompt).toContain('MBA writing');
     expect(prompt).toContain('Corrected:');
     expect(explainTopicPrompt(ctx)).toContain('under 180 words');
+  });
+});
+
+describe('feedbackPrompt', () => {
+  it('includes the test answers and tells the coach not to repeat gaps the test resolved', () => {
+    const state: SessionState = {
+      ...initialState(),
+      phase: 'feedback',
+      explain: { conceptGaps: ['CAPM formula not stated'], englishNotes: [] },
+      test: {
+        questions: ['Write the CAPM formula.', 'Why beta?', 'Two stocks?'],
+        answers: ['E(R) = Rf + Beta x (Rm - Rf)', 'Systematic risk only', 'Not diversified'],
+        score: 91,
+        mistakes: ['missed that CAPM assumes diversification'],
+      },
+    };
+    const prompt = feedbackPrompt(state);
+    expect(prompt).toContain('Q1: Write the CAPM formula.');
+    expect(prompt).toContain('A1: E(R) = Rf + Beta x (Rm - Rf)');
+    expect(prompt).toContain('treat a gap as resolved');
+    expect(prompt).toContain('Graded mistakes: missed that CAPM assumes diversification');
+    expect(prompt).toContain('the session is over');
   });
 });
