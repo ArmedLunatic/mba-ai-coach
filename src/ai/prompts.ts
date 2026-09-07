@@ -21,6 +21,9 @@ export function coachSystem(ctx: CoachContext): string {
 }
 
 export function explainTopicPrompt(ctx: CoachContext): string {
+  if (ctx.isLanguage) {
+    return `Explain the language point ${ctx.topic} in under 150 words. Give exactly two example sentences drawn from MBA writing: first one sentence that gets ${ctx.topic} wrong, then the same sentence corrected. Label them "Wrong:" and "Corrected:". End with one sentence on why this matters in MBA writing. Do not ask a question.`;
+  }
   return `Explain ${ctx.topic} in under 180 words. Include one concrete business example. End with one sentence on why this matters for an MBA student. Do not ask a question.`;
 }
 
@@ -28,12 +31,20 @@ export function followupPrompt(question: string): string {
   return `The student asks a follow-up: "${question}". Answer in under 120 words.`;
 }
 
-export function askPracticePrompt(index: number, state: SessionState): string {
+export function askPracticePrompt(ctx: CoachContext, index: number, state: SessionState): string {
+  const prev = state.practice.questions[index - 1] ?? '';
+  const answer = state.practice.answers[index - 1] ?? '';
+
+  if (ctx.isLanguage) {
+    if (index === 0) {
+      return `Ask the student to write one business sentence that uses ${ctx.topic} correctly. Return only the request, phrased as a single question.`;
+    }
+    return `Earlier you asked: "${prev}". The student wrote: "${answer}". Now give one business sentence that gets ${ctx.topic} wrong and ask the student to fix it. Return only the request, phrased as a single question.`;
+  }
+
   if (index === 0) {
     return 'Ask one Socratic question that tests whether the student understands the core idea of the topic. Return only the question.';
   }
-  const prev = state.practice.questions[0] ?? '';
-  const answer = state.practice.answers[0] ?? '';
   return `Earlier you asked: "${prev}". The student answered: "${answer}". Now ask one Socratic question that requires applying the topic to a business situation. Return only the question.`;
 }
 
@@ -51,8 +62,11 @@ export function critiquePrompt(text: string): string {
   ].join('\n');
 }
 
-export function generateTestPrompt(state: SessionState): string {
+export function generateTestPrompt(ctx: CoachContext, state: SessionState): string {
   const gaps = state.explain.conceptGaps.length ? `Target these gaps: ${state.explain.conceptGaps.join('; ')}.` : '';
+  if (ctx.isLanguage) {
+    return `Write exactly 3 short items that test ${ctx.topic}: sentence-correction or fill-in-the-blank, each answerable in one sentence. Draw every sentence from MBA business writing. ${gaps}`;
+  }
   return `Write exactly 3 short-answer exam questions on the topic, each answerable in 1-3 sentences. Mix one definition, one calculation-or-reasoning, and one application question. ${gaps}`;
 }
 

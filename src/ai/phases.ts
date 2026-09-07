@@ -32,7 +32,7 @@ export async function runEffect(effect: Effect, ctx: CoachContext, state: Sessio
       return { kind: 'followup-answer', text: await text('learn', ctx, followupPrompt(effect.question)) };
 
     case 'ask-practice':
-      return { kind: 'practice-question', question: await text('socratic', ctx, askPracticePrompt(effect.index, state)) };
+      return { kind: 'practice-question', question: await text('socratic', ctx, askPracticePrompt(ctx, effect.index, state)) };
 
     case 'grade-practice': {
       const { output } = await generateText({
@@ -58,7 +58,7 @@ export async function runEffect(effect: Effect, ctx: CoachContext, state: Sessio
       const { output } = await generateText({
         model: modelFor('test-gen'),
         system,
-        prompt: generateTestPrompt(state),
+        prompt: generateTestPrompt(ctx, state),
         output: Output.object({ schema: testQuestionsSchema }),
       });
       return { kind: 'test-questions', questions: output.questions };

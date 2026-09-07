@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { initialState, type SessionState } from '@/domain/session';
 import type { CoachContext } from './context';
 import { runEffect } from './phases';
+import { explainTopicPrompt } from './prompts';
 import { setModelResolver, type TaskKind } from './router';
 import { mockModel, mockResolver } from './test-utils';
 
-const ctx: CoachContext = { studentName: 'Ansh', level: 'beginner', courseName: 'Finance', topic: 'WACC', recentMistakes: [] };
+const ctx: CoachContext = { studentName: 'Ansh', level: 'beginner', courseName: 'Finance', topic: 'WACC', recentMistakes: [], isLanguage: false };
 
 afterEach(() => setModelResolver(null));
 
@@ -55,5 +56,17 @@ describe('runEffect', () => {
   it('treats finalize as a no-op', async () => {
     const r = await runEffect({ kind: 'finalize' }, ctx, initialState());
     expect(r).toEqual({ kind: 'finalized' });
+  });
+});
+
+describe('language-domain prompts', () => {
+  it('asks for a language point with a wrong and a corrected MBA sentence', () => {
+    const languageCtx: CoachContext = { ...ctx, courseName: null, topic: 'Articles', isLanguage: true };
+    const prompt = explainTopicPrompt(languageCtx);
+    expect(prompt).toContain('language point Articles');
+    expect(prompt).toContain('under 150 words');
+    expect(prompt).toContain('MBA writing');
+    expect(prompt).toContain('Corrected:');
+    expect(explainTopicPrompt(ctx)).toContain('under 180 words');
   });
 });

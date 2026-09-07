@@ -1,5 +1,6 @@
 import { levelFor, type CoachContext } from '@/ai/context';
 import type { runEffect } from '@/ai/phases';
+import { isLanguageDomain } from '@/db/curriculum';
 import type { LoadedSession, NewMessage, SessionOutcomeWrite } from '@/db/queries';
 import type { SessionMessage } from '@/db/schema';
 import { computeOutcome } from '@/domain/outcome';
@@ -48,6 +49,7 @@ export async function runSessionStep(loaded: LoadedSession, event: SessionEvent,
     courseName: course?.name ?? null,
     topic: skill.name,
     recentMistakes: observations.map((o) => o.note),
+    isLanguage: isLanguageDomain(skill.domain),
   };
 
   let state = transition.state;
