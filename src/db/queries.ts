@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
 import { COMMUNICATION_SKILLS, COURSES, ENGLISH_SKILLS, type Domain } from './curriculum';
 import { db } from './client';
 import { initialState, type SessionState } from '@/domain/session';
-import { initialScores } from '@/domain/skills';
+import { englishPenalty, initialScores } from '@/domain/skills';
 import { startOfDay } from '@/lib/today';
 import {
   courses,
@@ -24,6 +24,8 @@ import {
   type SkillObservation,
   type Student,
 } from './schema';
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type OnboardingInput = {
   name: string;
@@ -197,23 +199,6 @@ export async function getSkillPerformances(skillId: string, limit: number): Prom
   return rows.map((r) => r.performance as number).reverse();
 }
 
-export async function countEnglishNotesSince(skillId: string, since: Date): Promise<number> {
-  const rows = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(skillObservations)
-    .where(and(eq(skillObservations.skillId, skillId), eq(skillObservations.kind, 'english_note'), gte(skillObservations.createdAt, since)));
-  return rows[0]?.n ?? 0;
-}
-
-export async function getEnglishSkillByName(studentId: string, name: string): Promise<Skill | null> {
-  const rows = await db
-    .select()
-    .from(skills)
-    .where(and(eq(skills.studentId, studentId), eq(skills.domain, 'english'), eq(skills.name, name)))
-    .limit(1);
-  return rows[0] ?? null;
-}
-
 export type SessionOutcomeWrite = {
   sessionId: string;
   skillId: string;
@@ -227,21 +212,40 @@ export type SessionOutcomeWrite = {
   summary: string;
   mistakes: string[];
   englishNotes: { skill: string; note: string }[];
-  /** English score nudge per note, already computed by the caller (0 or -2). */
-  englishPenalties: number[];
-  now: Date;
+  /** Final phase state, committed with the outcome so a session is never `done` without one. */
+  state: SessionState;
+  /** Transcript rows produced by the final step, inserted in the same transaction. */
+  messages: NewMessage[];
+  at: Date;
 };
 
+/**
+ * Commits the whole end of a session in one transaction: phase state, transcript, session outcome,
+ * skill update, mistake observations, and the English nudges (whose penalty is computed inside the
+ * transaction so concurrent finalisations cannot both read a stale note count).
+ */
 export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void> {
+  const since = new Date(w.at.getTime() - WEEK_MS);
   await db.transaction(async (tx) => {
     await tx
       .update(sessions)
-      .set({ endedAt: w.now, performance: w.performance, selfConfidence: w.selfConfidence, summary: w.summary, phase: 'done' })
-      .where(eq(sessions.id, w.sessionId));
+      .set({
+        phaseState: w.state,
+        phase: 'done',
+        endedAt: w.at,
+        performance: w.performance,
+        selfConfidence: w.selfConfidence,
+        summary: w.summary,
+      })
+      .where(and(eq(sessions.id, w.sessionId), isNull(sessions.endedAt)));
+
+    if (w.messages.length) {
+      await tx.insert(sessionMessages).values(w.messages.map((m) => ({ sessionId: w.sessionId, ...m })));
+    }
 
     await tx
       .update(skills)
-      .set({ score: w.score, attempts: w.attempts, trend: w.trend, confidence: w.confidence, lastPracticedAt: w.now })
+      .set({ score: w.score, attempts: w.attempts, trend: w.trend, confidence: w.confidence, lastPracticedAt: w.at })
       .where(eq(skills.id, w.skillId));
 
     if (w.mistakes.length) {
@@ -250,16 +254,27 @@ export async function applySessionOutcome(w: SessionOutcomeWrite): Promise<void>
       );
     }
 
-    for (let i = 0; i < w.englishNotes.length; i++) {
-      const note = w.englishNotes[i];
+    for (const note of w.englishNotes) {
       const [englishSkill] = await tx
         .select()
         .from(skills)
         .where(and(eq(skills.studentId, w.studentId), eq(skills.domain, 'english'), eq(skills.name, note.skill)))
         .limit(1);
       if (!englishSkill) continue;
+
+      const [counted] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(skillObservations)
+        .where(
+          and(
+            eq(skillObservations.skillId, englishSkill.id),
+            eq(skillObservations.kind, 'english_note'),
+            gte(skillObservations.createdAt, since),
+          ),
+        );
+      const penalty = englishPenalty(counted?.n ?? 0);
+
       await tx.insert(skillObservations).values({ skillId: englishSkill.id, sessionId: w.sessionId, kind: 'english_note', note: note.note });
-      const penalty = w.englishPenalties[i] ?? 0;
       if (penalty !== 0) {
         await tx
           .update(skills)
