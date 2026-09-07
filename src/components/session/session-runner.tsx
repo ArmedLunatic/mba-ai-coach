@@ -89,9 +89,16 @@ export function SessionRunner({ sessionId, topic, courseName, initialState, init
         ))}
         {busy && <p className="text-sm text-muted-foreground">Coach is thinking…</p>}
         {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
+          <div className="grid justify-items-start gap-2">
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+            {messages.length === 0 && state.phase === 'learn' && (
+              <Button variant="outline" size="sm" disabled={busy} onClick={() => void send({ type: 'start' })}>
+                Try again
+              </Button>
+            )}
+          </div>
         )}
         <div ref={bottom} />
       </div>
